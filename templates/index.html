@@ -41,16 +41,17 @@
         const resultDiv = document.getElementById('result');
         let mediaStream = null;
         let intervalId = null;
+
         startButton.addEventListener('click', async () => {
             if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
                 mediaStream = await navigator.mediaDevices.getUserMedia({ video: true });
                 video.srcObject = mediaStream;
                 intervalId = setInterval(() => {
-                    detect_face_and_get_department();
-                    // detect_uniform_and_get_department();
+                    detect_and_display();
                 }, 1000); // Capture frame every second
             }
         });
+
         stopButton.addEventListener('click', () => {
             if (mediaStream) {
                 mediaStream.getTracks().forEach(track => track.stop());
@@ -60,7 +61,8 @@
                 clearInterval(intervalId);
             }
         });
-        async function detect_face_and_get_department() {
+
+        async function detect_and_display() {
             const canvas = document.createElement('canvas');
             canvas.width = video.videoWidth;
             canvas.height = video.videoHeight;
@@ -68,44 +70,41 @@
             context.drawImage(video, 0, 0, canvas.width, canvas.height);
             const imageData = canvas.toDataURL('image/jpeg');
             try {
-                const response = await fetch('/match', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({ image: imageData })
-                });
-                const result = await response.json();
-                console.log(result.name);
-                resultDiv.innerHTML = `<div class="alert alert-success">${result.name} | ${result.department}</div>`;
+                // Call both APIs in parallel
+                const [faceRes, uniformRes] = await Promise.all([
+                    fetch('/match', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ image: imageData })
+                    }).then(res => res.json()),
+                    fetch('/detect_department', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ image: imageData })
+                    }).then(res => res.json())
+                ]);
+
+                const name = faceRes.name || "Unknown";
+                const faceDept = faceRes.department || "Unknown";
+                const uniformDept = uniformRes.department || "Unknown";
+
+                let html = `
+                    <div class="alert alert-info">Department from Face: <b>${faceDept}</b></div>
+                    <div class="alert alert-info">Department from Uniform: <b>${uniformDept}</b></div>
+                `;
+
+                if (faceDept === uniformDept && name !== "Unknown" && faceDept !== "Unknown") {
+                    html += `<div class="alert alert-success"><b>${name}</b> is an Authorized Student</div>`;
+                } else {
+                    html += `<div class="alert alert-danger">Not Authorized</div>`;
+                }
+
+                resultDiv.innerHTML = html;
             } catch (error) {
                 console.error('Error:', error);
                 resultDiv.innerHTML = `<div class="alert alert-danger">Error processing image</div>`;
             }
         }
-        /*
-        async function detect_uniform_and_get_department() {
-            const canvas = document.createElement('canvas');
-            canvas.width = video.videoWidth;
-            canvas.height = video.videoHeight;
-            const context = canvas.getContext('2d');
-            context.drawImage(video, 0, 0, canvas.width, canvas.height);
-            const imageData = canvas.toDataURL('image/jpeg');
-            try {
-                const response = await fetch('/detect_department', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({ image: imageData })
-                });
-                const result = await response.json();
-                resultDiv.innerHTML = `<div class="alert alert-success">${result.department}</div>`;
-            } catch (error) {
-                console.error('Error:', error);
-                resultDiv.innerHTML = `<div class="alert alert-danger">Error processing image</div>`;
-            }
-        } */
     </script>
 </body>
 

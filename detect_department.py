@@ -12,12 +12,12 @@ def detect_department_from_uniform(image_data: str) -> str:
         image = Image.open(BytesIO(img_bytes)).convert("RGB")
         
         # Detect objects and extract department
-        detections = detect_objects_on_image(image)
-        for det in detections:
-            # det: [x1, y1, x2, y2, category, prob, color, department]
-            if det[4] == "shirt" and det[7] and det[7] != "Unknown":
-                return det[7]
-        return "Unknown"
+        department = detect_objects_on_image(image)
+        # for det in detections:
+        #     # det: [x1, y1, x2, y2, category, prob, color, department]
+        #     if det[4] == "shirt" and det[7] and det[7] != "Unknown":
+        #         return det[7]
+        return department
     except Exception as e:
         print(f"Error in detect_department_from_uniform: {e}")
         return "Unknown"
