@@ -18,21 +18,25 @@
             border: 2px solid #007bff;
             border-radius: 5px;
         }
-        </style>
+        .processing {
+            opacity: 0.6;
+        }
+        .step-indicator {
+            font-weight: bold;
+            color: #007bff;
+        }
+    </style>
 </head>
 
 <body>
     <div class="container">
         <h1 class="mt-5">{{ title }}</h1>
         <video id="video" width="640" height="480" autoplay class="mt-3"></video>
-        <button id="startButton" class="btn btn-primary mt-3">Start Camera</button>
-        <button id="stopButton" class="btn btn-danger mt-3">Stop Camera</button>
+        <div class="mt-3">
+            <button id="startButton" class="btn btn-primary">Start Camera</button>
+            <button id="stopButton" class="btn btn-danger">Stop Camera</button>
+        </div>
         <div id="result" class="mt-3"></div>
-        <!-- <div id="analysis" class="mt-3">
-            <h2>Detected Department from Uniform: <b>B.TECH</b></h2>
-            <h2>Detected Department From Face: <b>B.TECH</b></h2>
-            <h1><b>Bittu</b> is an Authorized Student</h1>
-        </div> -->
     </div>
     <script>
         const video = document.getElementById('video');
@@ -41,14 +45,22 @@
         const resultDiv = document.getElementById('result');
         let mediaStream = null;
         let intervalId = null;
+        let isProcessing = false;
 
         startButton.addEventListener('click', async () => {
             if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
-                mediaStream = await navigator.mediaDevices.getUserMedia({ video: true });
-                video.srcObject = mediaStream;
-                intervalId = setInterval(() => {
-                    detect_and_display();
-                }, 1000); // Capture frame every second
+                try {
+                    mediaStream = await navigator.mediaDevices.getUserMedia({ video: true });
+                    video.srcObject = mediaStream;
+                    intervalId = setInterval(() => {
+                        if (!isProcessing) {
+                            detect_and_display();
+                        }
+                    }, 3000); // Capture frame every 3 seconds
+                } catch (error) {
+                    console.error('Error accessing camera:', error);
+                    resultDiv.innerHTML = `<div class="alert alert-danger">Error accessing camera</div>`;
+                }
             }
         });
 
@@ -60,49 +72,135 @@
             if (intervalId) {
                 clearInterval(intervalId);
             }
+            isProcessing = false; // Reset processing flag
+            resultDiv.innerHTML = '';
         });
 
         async function detect_and_display() {
+            // Prevent multiple simultaneous processing
+            if (isProcessing) return;
+            isProcessing = true;
+
             const canvas = document.createElement('canvas');
             canvas.width = video.videoWidth;
             canvas.height = video.videoHeight;
             const context = canvas.getContext('2d');
             context.drawImage(video, 0, 0, canvas.width, canvas.height);
             const imageData = canvas.toDataURL('image/jpeg');
+
             try {
-                // Call both APIs in parallel
-                const [faceRes, uniformRes] = await Promise.all([
-                    fetch('/match', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ image: imageData })
-                    }).then(res => res.json()),
-                    fetch('/detect_department', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ image: imageData })
-                    }).then(res => res.json())
-                ]);
+                // Step 1: Show processing indicator
+                resultDiv.innerHTML = `
+                    <div class="alert alert-info processing">
+                        <div class="step-indicator">Step 1/3: Detecting face...</div>
+                        <div class="spinner-border spinner-border-sm ml-2" role="status"></div>
+                    </div>
+                `;
+
+                // Step 2: Detect face and show result
+                const faceRes = await fetch('/match', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ image: imageData })
+                }).then(res => res.json());
 
                 const name = faceRes.name || "Unknown";
                 const faceDept = faceRes.department || "Unknown";
-                const uniformDept = uniformRes.department || "Unknown";
 
-                let html = `
-                    <div class="alert alert-info">Department from Face: <b>${faceDept}</b></div>
-                    <div class="alert alert-info">Department from Uniform: <b>${uniformDept}</b></div>
+                resultDiv.innerHTML = `
+                    <div class="alert alert-success">
+                        <div class="step-indicator">✓ Step 1/3: Face Detection Complete</div>
+                        <div><strong>Name:</strong> ${name}</div>
+                        <div><strong>Department from Face:</strong> ${faceDept}</div>
+                    </div>
+                    <div class="alert alert-info processing">
+                        <div class="step-indicator">Step 2/3: Detecting uniform...</div>
+                        <div class="spinner-border spinner-border-sm ml-2" role="status"></div>
+                    </div>
                 `;
 
+                // Small delay for better UX
+                await new Promise(resolve => setTimeout(resolve, 800));
+
+                // Step 3: Detect uniform and show result
+                const uniformRes = await fetch('/detect_department', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ image: imageData })
+                }).then(res => res.json());
+
+                const uniformDept = uniformRes.department || "Unknown";
+
+                resultDiv.innerHTML = `
+                    <div class="alert alert-success">
+                        <div class="step-indicator">✓ Step 1/3: Face Detection Complete</div>
+                        <div><strong>Name:</strong> ${name}</div>
+                        <div><strong>Department from Face:</strong> ${faceDept}</div>
+                    </div>
+                    <div class="alert alert-success">
+                        <div class="step-indicator">✓ Step 2/3: Uniform Detection Complete</div>
+                        <div><strong>Department from Uniform:</strong> ${uniformDept}</div>
+                    </div>
+                    <div class="alert alert-info processing">
+                        <div class="step-indicator">Step 3/3: Verifying authorization...</div>
+                        <div class="spinner-border spinner-border-sm ml-2" role="status"></div>
+                    </div>
+                `;
+
+                // Small delay for better UX
+                await new Promise(resolve => setTimeout(resolve, 800));
+
+                // Step 4: Show final authorization result
+                let authorizationHtml = '';
                 if (faceDept === uniformDept && name !== "Unknown" && faceDept !== "Unknown") {
-                    html += `<div class="alert alert-success"><b>${name}</b> is an Authorized Student</div>`;
+                    authorizationHtml = `<div class="alert alert-success">
+                        <div class="step-indicator">✓ Step 3/3: Authorization Complete</div>
+                        <h4><strong>${name}</strong> is an Authorized Student</h4>
+                        <div class="mt-2">Both face and uniform departments match: <strong>${faceDept}</strong></div>
+                    </div>`;
                 } else {
-                    html += `<div class="alert alert-danger">Not Authorized</div>`;
+                    let reason = '';
+                    if (name === "Unknown") {
+                        reason = 'Face not recognized';
+                    } else if (faceDept === "Unknown" || uniformDept === "Unknown") {
+                        reason = 'Department could not be determined';
+                    } else if (faceDept !== uniformDept) {
+                        reason = `Department mismatch (Face: ${faceDept}, Uniform: ${uniformDept})`;
+                    }
+                    
+                    authorizationHtml = `<div class="alert alert-danger">
+                        <div class="step-indicator">✗ Step 3/3: Authorization Failed</div>
+                        <h4><strong>Not Authorized</strong></h4>
+                        <div class="mt-2">Reason: ${reason}</div>
+                    </div>`;
                 }
 
-                resultDiv.innerHTML = html;
+                resultDiv.innerHTML = `
+                    <div class="alert alert-success">
+                        <div class="step-indicator">✓ Step 1/3: Face Detection Complete</div>
+                        <div><strong>Name:</strong> ${name}</div>
+                        <div><strong>Department from Face:</strong> ${faceDept}</div>
+                    </div>
+                    <div class="alert alert-success">
+                        <div class="step-indicator">✓ Step 2/3: Uniform Detection Complete</div>
+                        <div><strong>Department from Uniform:</strong> ${uniformDept}</div>
+                    </div>
+                    ${authorizationHtml}
+                `;
+
+                // Show the final result for 4 seconds before allowing next cycle
+                await new Promise(resolve => setTimeout(resolve, 4000));
+
             } catch (error) {
                 console.error('Error:', error);
-                resultDiv.innerHTML = `<div class="alert alert-danger">Error processing image</div>`;
+                resultDiv.innerHTML = `<div class="alert alert-danger">
+                    <strong>Error processing image:</strong> ${error.message}
+                </div>`;
+                // Show error for 4 seconds as well
+                await new Promise(resolve => setTimeout(resolve, 4000));
+            } finally {
+                // Always reset processing flag when done
+                isProcessing = false;
             }
         }
     </script>
