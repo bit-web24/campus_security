@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ title }}</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <style>
+        body {
+            background-color: #f8f9fa;
+        }
+        .container {
+            max-width: 800px;
+            margin-top: 50px;
+        }
+        video {
+            border: 2px solid #007bff;
+            border-radius: 5px;
+        }
+        </style>
+</head>
+
+<body>
+    <div class="container">
+        <h1 class="mt-5">{{ title }}</h1>
+        <video id="video" width="640" height="480" autoplay class="mt-3"></video>
+        <button id="startButton" class="btn btn-primary mt-3">Start Camera</button>
+        <button id="stopButton" class="btn btn-danger mt-3">Stop Camera</button>
+        <div id="result" class="mt-3"></div>
+        <div id="analysis" class="mt-3">
+            <h2>Detected Department from Uniform: <b>B.TECH</b></h2>
+            <h2>Detected Department From Face: <b>B.TECH</b></h2>
+            <h1><b>Bittu</b> is an Authorized Student</h1>
+        </div>
+    </div>
+    <script>
+        const video = document.getElementById('video');
+        const startButton = document.getElementById('startButton');
+        const stopButton = document.getElementById('stopButton');
+        const resultDiv = document.getElementById('result');
+        let mediaStream = null;
+        let intervalId = null;
+        startButton.addEventListener('click', async () => {
+            if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+                mediaStream = await navigator.mediaDevices.getUserMedia({ video: true });
+                video.srcObject = mediaStream;
+                intervalId = setInterval(() => {
+                    captureFrame();
+                }, 1000); // Capture frame every second
+            }
+        });
+        stopButton.addEventListener('click', () => {
+            if (mediaStream) {
+                mediaStream.getTracks().forEach(track => track.stop());
+                video.srcObject = null;
+            }
+            if (intervalId) {
+                clearInterval(intervalId);
+            }
+        });
+        async function captureFrame() {
+            const canvas = document.createElement('canvas');
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            const context = canvas.getContext('2d');
+            context.drawImage(video, 0, 0, canvas.width, canvas.height);
+            const imageData = canvas.toDataURL('image/jpeg');
+            try {
+                const response = await fetch('/match', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ image: imageData })
+                });
+                const result = await response.json();
+                resultDiv.innerHTML = `<div class="alert alert-success">${result.name}</div>`;
+            } catch (error) {
+                console.error('Error:', error);
+                resultDiv.innerHTML = `<div class="alert alert-danger">Error processing image</div>`;
+            }
+        }
+    </script>
+</body>
+
+</html>
