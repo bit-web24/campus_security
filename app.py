@@ -24,6 +24,7 @@ async def match_face(request: Request):
     result = match_face_with_db(image_data)
     return {
         "name": result.get("name", "Unknown"),
+        "department": result.get("department", "Unknown"),
     }
 
 @app.post("/detect_department")

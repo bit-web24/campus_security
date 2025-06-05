@@ -26,15 +26,16 @@ def match_face_with_db(image_data: str):
         database="deepface_schema"
     )
     cursor = conn.cursor(dictionary=True)
-    cursor.execute("SELECT name, face FROM registered_users")
+    cursor.execute("SELECT name, face, department FROM registered_users")
     users = cursor.fetchall()
     
     # Detect and match faces
-    matched_names, _ = detect_and_match_faces(temp_filename, users)
+    matched_name, processed_image_path = detect_and_match_faces(temp_filename, users)
     
     # Clean up temp file
     os.remove(temp_filename)
     
     return {
-        "name": matched_names
+        "name": matched_name,
+        "department": next((user['department'] for user in users if user['name'] == matched_name), "Unknown"),
     }

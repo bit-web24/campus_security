@@ -10,13 +10,13 @@ def connect_db():
         host="localhost",
         user="bittu",
         password="bittu",
-        database="deepface_schema"
+        database="campus_security"
     )
     return conn
 
 def fetch_users(cursor):
-    cursor.execute("SELECT name, face FROM registered_users")
-    return [{'name': row[0], 'face': row[1]} for row in cursor.fetchall()]
+    cursor.execute("SELECT name, face, department FROM registered_users")
+    return [{'name': row[0], 'face': row[1], 'department': row[2]} for row in cursor.fetchall()]
 
 def base64_to_image(base64_str):
     img_bytes = base64.b64decode(base64_str)
@@ -26,7 +26,6 @@ def base64_to_image(base64_str):
 
 def detect_and_match_faces(image_path, users):
     frame = cv2.imread(image_path)
-    matched_names = []
 
     try:
         detections = DeepFace.extract_faces(frame, enforce_detection=False)
@@ -50,12 +49,14 @@ def detect_and_match_faces(image_path, users):
             cv2.rectangle(frame, (x, y), (x+w, y+h), (0, 255, 0), 2)
             cv2.putText(frame, matched_name, (x, y - 10),
                         cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 255, 0), 2)
-            matched_names.append(matched_name)
+            if matched_name != "Unknown":
+                processed_image_path = os.path.splitext(image_path)[0] + "_processed.jpg"
+                cv2.imwrite(processed_image_path, frame)
+                return matched_name, processed_image_path  # Return first matched name
 
     except Exception as e:
         print("Error:", e)
 
     processed_image_path = os.path.splitext(image_path)[0] + "_processed.jpg"
     cv2.imwrite(processed_image_path, frame)
-
-    return ", ".join(matched_names) if matched_names else "Unknown", processed_image_path
+    return "Unknown", processed_image_path

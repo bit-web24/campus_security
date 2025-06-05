@@ -28,11 +28,11 @@
         <button id="startButton" class="btn btn-primary mt-3">Start Camera</button>
         <button id="stopButton" class="btn btn-danger mt-3">Stop Camera</button>
         <div id="result" class="mt-3"></div>
-        <div id="analysis" class="mt-3">
+        <!-- <div id="analysis" class="mt-3">
             <h2>Detected Department from Uniform: <b>B.TECH</b></h2>
             <h2>Detected Department From Face: <b>B.TECH</b></h2>
             <h1><b>Bittu</b> is an Authorized Student</h1>
-        </div>
+        </div> -->
     </div>
     <script>
         const video = document.getElementById('video');
@@ -46,7 +46,8 @@
                 mediaStream = await navigator.mediaDevices.getUserMedia({ video: true });
                 video.srcObject = mediaStream;
                 intervalId = setInterval(() => {
-                    captureFrame();
+                    detect_face_and_get_department();
+                    // detect_uniform_and_get_department();
                 }, 1000); // Capture frame every second
             }
         });
@@ -59,7 +60,7 @@
                 clearInterval(intervalId);
             }
         });
-        async function captureFrame() {
+        async function detect_face_and_get_department() {
             const canvas = document.createElement('canvas');
             canvas.width = video.videoWidth;
             canvas.height = video.videoHeight;
@@ -75,12 +76,36 @@
                     body: JSON.stringify({ image: imageData })
                 });
                 const result = await response.json();
-                resultDiv.innerHTML = `<div class="alert alert-success">${result.name}</div>`;
+                console.log(result.name);
+                resultDiv.innerHTML = `<div class="alert alert-success">${result.name} | ${result.department}</div>`;
             } catch (error) {
                 console.error('Error:', error);
                 resultDiv.innerHTML = `<div class="alert alert-danger">Error processing image</div>`;
             }
         }
+        /*
+        async function detect_uniform_and_get_department() {
+            const canvas = document.createElement('canvas');
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            const context = canvas.getContext('2d');
+            context.drawImage(video, 0, 0, canvas.width, canvas.height);
+            const imageData = canvas.toDataURL('image/jpeg');
+            try {
+                const response = await fetch('/detect_department', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ image: imageData })
+                });
+                const result = await response.json();
+                resultDiv.innerHTML = `<div class="alert alert-success">${result.department}</div>`;
+            } catch (error) {
+                console.error('Error:', error);
+                resultDiv.innerHTML = `<div class="alert alert-danger">Error processing image</div>`;
+            }
+        } */
     </script>
 </body>
 
