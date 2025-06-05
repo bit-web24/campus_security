@@ -1,42 +1,111 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{{ title }}</title>
-    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <title>Face and Uniform Recognition</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
         body {
-            background-color: #f8f9fa;
+            background: linear-gradient(135deg, #f0f4ff 0%, #ffffff 100%);
+            min-height: 100vh;
+            font-family: 'Inter', sans-serif;
         }
-        .container {
-            max-width: 800px;
-            margin-top: 50px;
+        .video-container {
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
+            background: #ffffff;
         }
-        video {
-            border: 2px solid #007bff;
-            border-radius: 5px;
+        .steps-container {
+            max-height: 480px;
+            overflow-y: auto;
+            scrollbar-width: thin;
+            scrollbar-color: #3b82f6 #f1f5f9;
+            background: #ffffff;
+            border-radius: 12px;
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
+        }
+        .steps-container::-webkit-scrollbar {
+            width: 8px;
+        }
+        .steps-container::-webkit-scrollbar-track {
+            background: #f1f5f9;
+            border-radius: 12px;
+        }
+        .steps-container::-webkit-scrollbar-thumb {
+            background-color: #3b82f6;
+            border-radius: 12px;
         }
         .processing {
-            opacity: 0.6;
+            opacity: 0.8;
+            transition: opacity 0.3s ease;
         }
         .step-indicator {
-            font-weight: bold;
-            color: #007bff;
+            font-weight: 600;
+            color: #1e40af;
+            font-size: 0.9rem;
+        }
+        .result-card {
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        .result-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+        .button-group button {
+            transition: transform 0.2s ease, background 0.3s ease;
+            background: linear-gradient(90deg, #3b82f6, #60a5fa);
+            border: none;
+        }
+        .button-group button:hover {
+            transform: translateY(-2px);
+            background: linear-gradient(90deg, #2563eb, #3b82f6);
+        }
+        .button-group .stop-button {
+            background: linear-gradient(90deg, #ef4444, #f87171);
+        }
+        .button-group .stop-button:hover {
+            background: linear-gradient(90deg, #dc2626, #ef4444);
+        }
+        .header {
+            background: #ffffff;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+        }
+        @media (max-width: 768px) {
+            .grid-cols-1 md\\:grid-cols-2 {
+                grid-template-columns: 1fr;
+            }
+            .steps-container {
+                max-height: 300px;
+                margin-top: 1rem;
+            }
+            .video-container {
+                max-width: 100%;
+            }
         }
     </style>
 </head>
-
 <body>
-    <div class="container">
-        <h1 class="mt-5">{{ title }}</h1>
-        <video id="video" width="640" height="480" autoplay class="mt-3"></video>
-        <div class="mt-3">
-            <button id="startButton" class="btn btn-primary">Start Camera</button>
-            <button id="stopButton" class="btn btn-danger">Stop Camera</button>
+    <div class="container mx-auto max-w-7xl px-4 py-10">
+        <div class="header p-6 mb-8 text-center">
+            <h1 class="text-4xl font-bold text-gray-900">Face & Uniform Recognition System</h1>
+            <p class="text-gray-600 mt-2">Real-time identification and authorization for enhanced security</p>
         </div>
-        <div id="result" class="mt-3"></div>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div class="video-container">
+                <video id="video" width="640" height="480" autoplay class="w-full"></video>
+            </div>
+            <div class="steps-container p-6">
+                <div id="result" class="space-y-4"></div>
+            </div>
+        </div>
+        <div class="button-group flex justify-center space-x-4 mt-6">
+            <button id="startButton" class="text-white px-8 py-3 rounded-full shadow-lg font-medium">Start Camera</button>
+            <button id="stopButton" class="stop-button text-white px-8 py-3 rounded-full shadow-lg font-medium">Stop Camera</button>
+        </div>
     </div>
     <script>
         const video = document.getElementById('video');
@@ -56,10 +125,10 @@
                         if (!isProcessing) {
                             detect_and_display();
                         }
-                    }, 3000); // Capture frame every 3 seconds
+                    }, 3000);
                 } catch (error) {
                     console.error('Error accessing camera:', error);
-                    resultDiv.innerHTML = `<div class="alert alert-danger">Error accessing camera</div>`;
+                    resultDiv.innerHTML = `<div class="bg-red-50 border-l-4 border-red-500 text-red-700 p-4 rounded-lg">Error accessing camera: ${error.message}</div>`;
                 }
             }
         });
@@ -72,12 +141,11 @@
             if (intervalId) {
                 clearInterval(intervalId);
             }
-            isProcessing = false; // Reset processing flag
+            isProcessing = false;
             resultDiv.innerHTML = '';
         });
 
         async function detect_and_display() {
-            // Prevent multiple simultaneous processing
             if (isProcessing) return;
             isProcessing = true;
 
@@ -89,15 +157,13 @@
             const imageData = canvas.toDataURL('image/jpeg');
 
             try {
-                // Step 1: Show processing indicator
                 resultDiv.innerHTML = `
-                    <div class="alert alert-info processing">
+                    <div class="bg-blue-50 border-l-4 border-blue-500 text-blue-700 p-4 rounded-lg processing">
                         <div class="step-indicator">Step 1/3: Detecting face...</div>
-                        <div class="spinner-border spinner-border-sm ml-2" role="status"></div>
+                        <div class="inline-block animate-spin h-5 w-5 border-2 border-blue-500 border-t-transparent rounded-full ml-2"></div>
                     </div>
                 `;
 
-                // Step 2: Detect face and show result
                 const faceRes = await fetch('/match', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -108,21 +174,19 @@
                 const faceDept = faceRes.department || "Unknown";
 
                 resultDiv.innerHTML = `
-                    <div class="alert alert-success">
+                    <div class="bg-green-50 border-l-4 border-green-500 text-green-700 p-4 rounded-lg result-card">
                         <div class="step-indicator">✓ Step 1/3: Face Detection Complete</div>
                         <div><strong>Name:</strong> ${name}</div>
                         <div><strong>Department from Face:</strong> ${faceDept}</div>
                     </div>
-                    <div class="alert alert-info processing">
+                    <div class="bg-blue-50 border-l-4 border-blue-500 text-blue-700 p-4 rounded-lg processing">
                         <div class="step-indicator">Step 2/3: Detecting uniform...</div>
-                        <div class="spinner-border spinner-border-sm ml-2" role="status"></div>
+                        <div class="inline-block animate-spin h-5 w-5 border-2 border-blue-500 border-t-transparent rounded-full ml-2"></div>
                     </div>
                 `;
 
-                // Small delay for better UX
                 await new Promise(resolve => setTimeout(resolve, 800));
 
-                // Step 3: Detect uniform and show result
                 const uniformRes = await fetch('/detect_department', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -132,30 +196,28 @@
                 const uniformDept = uniformRes.department || "Unknown";
 
                 resultDiv.innerHTML = `
-                    <div class="alert alert-success">
+                    <div class="bg-green-50 border-l-4 border-green-500 text-green-700 p-4 rounded-lg result-card">
                         <div class="step-indicator">✓ Step 1/3: Face Detection Complete</div>
                         <div><strong>Name:</strong> ${name}</div>
                         <div><strong>Department from Face:</strong> ${faceDept}</div>
                     </div>
-                    <div class="alert alert-success">
+                    <div class="bg-green-50 border-l-4 border-green-500 text-green-700 p-4 rounded-lg result-card">
                         <div class="step-indicator">✓ Step 2/3: Uniform Detection Complete</div>
                         <div><strong>Department from Uniform:</strong> ${uniformDept}</div>
                     </div>
-                    <div class="alert alert-info processing">
+                    <div class="bg-blue-50 border-l-4 border-blue-500 text-blue-700 p-4 rounded-lg processing">
                         <div class="step-indicator">Step 3/3: Verifying authorization...</div>
-                        <div class="spinner-border spinner-border-sm ml-2" role="status"></div>
+                        <div class="inline-block animate-spin h-5 w-5 border-2 border-blue-500 border-t-transparent rounded-full ml-2"></div>
                     </div>
                 `;
 
-                // Small delay for better UX
                 await new Promise(resolve => setTimeout(resolve, 800));
 
-                // Step 4: Show final authorization result
                 let authorizationHtml = '';
                 if (faceDept === uniformDept && name !== "Unknown" && faceDept !== "Unknown") {
-                    authorizationHtml = `<div class="alert alert-success">
+                    authorizationHtml = `<div class="bg-green-50 border-l-4 border-green-500 text-green-700 p-4 rounded-lg result-card">
                         <div class="step-indicator">✓ Step 3/3: Authorization Complete</div>
-                        <h4><strong>${name}</strong> is an Authorized Student</h4>
+                        <h4 class="font-semibold text-lg"><strong>${name}</strong> is an Authorized Student</h4>
                         <div class="mt-2">Both face and uniform departments match: <strong>${faceDept}</strong></div>
                     </div>`;
                 } else {
@@ -168,42 +230,38 @@
                         reason = `Department mismatch (Face: ${faceDept}, Uniform: ${uniformDept})`;
                     }
                     
-                    authorizationHtml = `<div class="alert alert-danger">
+                    authorizationHtml = `<div class="bg-red-50 border-l-4 border-red-500 text-red-700 p-4 rounded-lg result-card">
                         <div class="step-indicator">✗ Step 3/3: Authorization Failed</div>
-                        <h4><strong>Not Authorized</strong></h4>
+                        <h4 class="font-semibold text-lg"><strong>Not Authorized</strong></h4>
                         <div class="mt-2">Reason: ${reason}</div>
                     </div>`;
                 }
 
                 resultDiv.innerHTML = `
-                    <div class="alert alert-success">
+                    <div class="bg-green-50 border-l-4 border-green-500 text-green-700 p-4 rounded-lg result-card">
                         <div class="step-indicator">✓ Step 1/3: Face Detection Complete</div>
                         <div><strong>Name:</strong> ${name}</div>
                         <div><strong>Department from Face:</strong> ${faceDept}</div>
                     </div>
-                    <div class="alert alert-success">
+                    <div class="bg-green-50 border-l-4 border-green-500 text-green-700 p-4 rounded-lg result-card">
                         <div class="step-indicator">✓ Step 2/3: Uniform Detection Complete</div>
                         <div><strong>Department from Uniform:</strong> ${uniformDept}</div>
                     </div>
                     ${authorizationHtml}
                 `;
 
-                // Show the final result for 4 seconds before allowing next cycle
                 await new Promise(resolve => setTimeout(resolve, 4000));
 
             } catch (error) {
                 console.error('Error:', error);
-                resultDiv.innerHTML = `<div class="alert alert-danger">
+                resultDiv.innerHTML = `<div class="bg-red-50 border-l-4 border-red-500 text-red-700 p-4 rounded-lg">
                     <strong>Error processing image:</strong> ${error.message}
                 </div>`;
-                // Show error for 4 seconds as well
                 await new Promise(resolve => setTimeout(resolve, 4000));
             } finally {
-                // Always reset processing flag when done
                 isProcessing = false;
             }
         }
     </script>
 </body>
-
 </html>

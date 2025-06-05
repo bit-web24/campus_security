@@ -19,8 +19,8 @@ PANT_CLASSES = {
 def get_dominant_color(image):
     """Extract dominant color from PIL image using K-means clustering"""
     try:
-        # Resize image to reduce computation time
-        image = image.resize((50, 50))
+        # Resize image to reduce computation time, but keep enough detail for close-ups
+        image = image.resize((100, 100))
         data = np.array(image)
         
         # Handle grayscale images
@@ -36,8 +36,8 @@ def get_dominant_color(image):
         if len(data) == 0:
             return '#808080'  # Default gray if no valid pixels
         
-        # Use K-means to find dominant color
-        kmeans = KMeans(n_clusters=min(3, len(data)), random_state=0, n_init=10).fit(data)
+        # Use K-means with more clusters for better color differentiation
+        kmeans = KMeans(n_clusters=min(5, len(data)), random_state=0, n_init=10).fit(data)
         counts = np.bincount(kmeans.labels_)
         dominant = kmeans.cluster_centers_[np.argmax(counts)]
         dominant = tuple(map(int, dominant))
@@ -112,32 +112,32 @@ def get_department_from_color(color_hex):
     try:
         color_rgb = hex_to_rgb(color_hex)
         
-        # Department color range mapping (HSV ranges)
+        # Department color range mapping (HSV ranges, slightly widened for robustness)
         department_ranges = {
             "BCA": [
                 # Light pink ranges
-                {'hue': (330, 360), 'saturation': (20, 60), 'value': (80, 100)},  # Light pink
-                {'hue': (0, 30), 'saturation': (20, 60), 'value': (80, 100)},    # Light pink wraparound
+                {'hue': (325, 360), 'saturation': (15, 65), 'value': (75, 100)},  # Light pink
+                {'hue': (0, 35), 'saturation': (15, 65), 'value': (75, 100)},     # Light pink wraparound
             ],
-            "B.Tech": [
+            "B.TECH": [
                 # Gray/wheat ranges
-                {'hue': (0, 360), 'saturation': (0, 20), 'value': (50, 80)},     # Gray tones
-                {'hue': (40, 60), 'saturation': (10, 40), 'value': (60, 85)},    # Wheat/beige
+                {'hue': (0, 360), 'saturation': (0, 25), 'value': (45, 85)},      # Gray tones
+                {'hue': (35, 65), 'saturation': (5, 45), 'value': (55, 90)},      # Wheat/beige
             ],
-            "B.Pharma": [
+            "B.PHARMA": [
                 # Sky blue ranges
-                {'hue': (180, 220), 'saturation': (40, 80), 'value': (60, 90)},  # Sky blue
-                {'hue': (200, 240), 'saturation': (30, 70), 'value': (70, 95)},  # Light blue
+                {'hue': (175, 225), 'saturation': (35, 85), 'value': (55, 95)},   # Sky blue
+                {'hue': (195, 245), 'saturation': (25, 75), 'value': (65, 100)},  # Light blue
             ],
             "BMLT": [
                 # Dark pink ranges
-                {'hue': (320, 350), 'saturation': (40, 80), 'value': (40, 70)},  # Dark pink
-                {'hue': (300, 330), 'saturation': (50, 90), 'value': (45, 75)},  # Magenta-pink
+                {'hue': (315, 355), 'saturation': (35, 85), 'value': (35, 75)},   # Dark pink
+                {'hue': (295, 335), 'saturation': (45, 95), 'value': (40, 80)},   # Magenta-pink
             ],
             "MBA": [
                 # Yellow ranges
-                {'hue': (50, 70), 'saturation': (80, 100), 'value': (90, 100)},  # Bright yellow
-                {'hue': (45, 75), 'saturation': (70, 100), 'value': (85, 100)},  # Yellow variations
+                {'hue': (45, 75), 'saturation': (75, 100), 'value': (85, 100)},   # Bright yellow
+                {'hue': (40, 80), 'saturation': (65, 100), 'value': (80, 100)},   # Yellow variations
             ],
         }
         
@@ -155,7 +155,8 @@ def get_department_from_color(color_hex):
 def detect_department_from_uniform_colorcode(image):
     """Detect objects in image and return detected departments from shirts only"""
     try:
-        results = model.predict(image, conf=0.3, verbose=False)
+        # Lowered confidence threshold to detect uniforms in close-up scenarios
+        results = model.predict(image, conf=0.25, verbose=False, max_det=10)
         if not results:
             return []
         
@@ -171,12 +172,14 @@ def detect_department_from_uniform_colorcode(image):
                 if label in SHIRT_CLASSES:
                     # Ensure coordinates are within image bounds
                     img_width, img_height = image.size
-                    x1 = max(0, min(x1, img_width))
-                    y1 = max(0, min(y1, img_height))
+                    x1 = max(0, min(x1, img_width - 1))
+                    y1 = max(0, min(y1, img_height - 1))
                     x2 = max(0, min(x2, img_width))
                     y2 = max(0, min(y2, img_height))
                     
-                    if x2 > x1 and y2 > y1:
+                    # Ensure valid bounding box with minimum size
+                    min_box_size = 20  # Minimum width/height for valid detection
+                    if x2 > x1 + min_box_size and y2 > y1 + min_box_size:
                         cropped = image.crop((x1, y1, x2, y2))
                         color = get_dominant_color(cropped)
                         department = get_department_from_color(color)
