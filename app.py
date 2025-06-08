@@ -2,7 +2,7 @@ from fastapi import FastAPI, Request
 from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
 from match_face import match_face_with_db
-from detect_department import detect_department_from_uniform
+from uniform import detect_department_from_uniform
 
 app = FastAPI()
 templates = Jinja2Templates(directory="templates")
