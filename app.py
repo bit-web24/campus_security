@@ -35,8 +35,6 @@ async def detect_department(request: Request):
         return {"error": "No image data provided"}
     
     department, bbox = detect_department_from_uniform(image_data)
-    if department is None:
-        return {"error": "Department could not be detected"}
     return {
         "department": department,
         "bbox": bbox,

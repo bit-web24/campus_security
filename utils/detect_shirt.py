@@ -5,7 +5,7 @@ from ultralytics import YOLO
 from collections import deque
 
 # Load the YOLO model
-model_path = "../runs/content/runs/detect/train/weights/best.pt"
+model_path = "runs/content/runs/detect/train/weights/best.pt"
 try:
     model = YOLO(model_path)
 except Exception as e:
