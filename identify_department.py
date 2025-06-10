@@ -27,24 +27,25 @@ def identify_department_from_uniform_colorcode(image):
                 if class_name != "shirt":
                     continue
 
-                # Crop shirt region
+                # Crop shirt region (BGR format)
                 cropped_shirt = image[y1:y2, x1:x2]
 
                 if cropped_shirt.size == 0:
                     continue
                 
                 # Convert to RGB for color extraction
-                cropped_rgb = cv2.cvtColor(cropped_shirt, cv2.COLOR_BGR2RGB)
-                dominant_color = get_dominant_color(cropped_rgb)
-                department = detect_department_from_cropped_image(dominant_color, DEPARTMENT_COLORS)
-
+                # cropped_rgb = cv2.cvtColor(cropped_shirt, cv2.COLOR_BGR2RGB)
+                # dominant_color = get_dominant_color(cropped_rgb)
+                # department = detect_department_from_cropped_image(dominant_color, DEPARTMENT_COLORS)
+                department = get_department(cropped_shirt, DEPARTMENT_COLORS)
+                
                 overall_confidence = confidence * (0.8 if department else 0.3)
                 color_confidence = "high" if department else "low"
                 crop_area = (x2 - x1) * (y2 - y1)
 
                 result_dict = {
                     'department': department,
-                    'dominant_color': [int(x) for x in dominant_color],
+                    # 'dominant_color': [int(x) for x in dominant_color],
                     'shirt_detection_confidence': confidence,
                     'overall_confidence': overall_confidence,
                     'color_confidence': color_confidence,
@@ -62,44 +63,123 @@ def identify_department_from_uniform_colorcode(image):
         print(f"Error in identify_department_from_uniform_colorcode: {e}")
         return None
 
-# defined DEPARTMENT_COLORS with lower and upper HSV ranges for each department
-DEPARTMENT_COLORS = {
-    "B.PHARMA_x": {'lower': [100, 0, 149], 'upper': [116, 84, 255]}, # > 0.7
-    "B.TECH_x": {'lower': [0, 0, 0], 'upper': [40, 255, 168]}, # > 0.7 if lighting is good else < 0.4
-    "BMLT_p": {'lower': [136, 0, 0], 'upper': [179, 255, 218]},
-    "BMLT_x": {'lower': [131, 48, 0], 'upper': [147, 87, 255]},
-    "BCA_x": {'lower': [87, 19, 156], 'upper': [179, 255, 255]},
-}
 
-def detect_department_from_cropped_image(dominant_color, department_colors):
+# def detect_department_from_cropped_image(dominant_color, department_colors):
+#     """
+#     Detect department based on the dominant HSV color.
+
+#     Parameters:
+#     - dominant_color: Tuple of HSV values (H, S, V).
+#     - department_colors: Dict of departments with HSV 'lower' and 'upper' bounds.
+
+#     Returns:
+#     - str: Department name if matched, else "No Match".
+#     """
+#     h, s, v = dominant_color
+
+#     for dept, ranges in department_colors.items():
+#         lower = ranges['lower']
+#         upper = ranges['upper']
+
+#         if (lower[0] <= h <= upper[0] and
+#             lower[1] <= s <= upper[1] and
+#             lower[2] <= v <= upper[2]):
+#             return dept
+
+#     return None
+
+
+def find_max_contour(image, hsv_lower, hsv_upper, area_threshold=0.4):
     """
-    Detect department based on the dominant HSV color.
+    Detects contours in an image based on HSV range, finds the contour with the maximum area,
+    and checks if its area exceeds the specified threshold.
 
     Parameters:
-    - dominant_color: Tuple of HSV values (H, S, V).
-    - department_colors: Dict of departments with HSV 'lower' and 'upper' bounds.
+        image (numpy.ndarray): Input image in BGR format.
+        hsv_lower (tuple): Lower bound of HSV values (H, S, V).
+        hsv_upper (tuple): Upper bound of HSV values (H, S, V).
+        area_threshold (float): Minimum area threshold for the contour.
 
     Returns:
-    - str: Department name if matched, else "No Match".
+        tuple: (max_contour, max_area, is_above_threshold)
+            - max_contour: Contour with the maximum area (None if no contours found).
+            - max_area: Area of the maximum contour (0 if no contours found).
+            - is_above_threshold: Boolean indicating if max_area exceeds area_threshold.
     """
-    h, s, v = dominant_color
+    # Convert the image to HSV color space
+    hsv_image = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
 
+    # Create a mask based on the HSV range
+    mask = cv2.inRange(hsv_image, np.array(hsv_lower), np.array(hsv_upper))
+
+    # Find contours in the mask
+    contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+
+    # Initialize variables for maximum contour and area
+    max_contour = None
+    max_area = 0
+
+    # Iterate through contours to find the one with maximum area
+    for contour in contours:
+        area = cv2.contourArea(contour)
+        if area > max_area:
+            max_area = area
+            max_contour = contour
+
+    # Check if the maximum area exceeds the threshold
+    is_above_threshold = max_area > area_threshold
+
+    return max_contour, max_area, is_above_threshold
+
+
+def get_department(image, department_colors):
+    """
+    Identify the department based on the dominant color of the shirt in the image.
+
+    Parameters:
+    - image: Input image in BGR format.
+    - department_colors: Dictionary containing department color ranges.
+
+    Returns:
+    - str: Detected department name or "No Match".
+    """
+    # Convert the image to HSV color space
+    # hsv_image = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
+    
+    department = {}
+
+    # Find contours for each department color
     for dept, ranges in department_colors.items():
         lower = ranges['lower']
         upper = ranges['upper']
 
-        if (lower[0] <= h <= upper[0] and
-            lower[1] <= s <= upper[1] and
-            lower[2] <= v <= upper[2]):
-            return dept
+        max_contour, max_area, is_above_threshold = find_max_contour(image, lower, upper)
 
-    return None
+        if is_above_threshold:
+            if not department or max_area > department['max_area']:
+                department = {
+                    'name': dept,
+                    'max_contour': max_contour,
+                    'max_area': max_area,
+                    'hsv_lower': lower,
+                    'hsv_upper': upper
+                }
+
+    return department['name'] if department else None
 
 
+# defined DEPARTMENT_COLORS with lower and upper HSV ranges for each department
+DEPARTMENT_COLORS = {
+    "Unknown": {'lower': [58, 20, 16], 'upper': [144, 210, 96]},
+    "B.TECH": {'lower': [0, 0, 0], 'upper': [40, 255, 168]},
+    "B.PHARMA": {'lower': [105, 48, 0], 'upper': [179, 255, 255]},
+    "BCA": {'lower': [87, 19, 156], 'upper': [179, 255, 255]},
+    # "B.PHARMA": {'lower': [100, 0, 149], 'upper': [116, 84, 255]}, # found from get_hsv.py
+}
 
 if __name__ == "__main__":
     try:
-        test_img = "./tests/images/bmlt.jpg"
+        test_img = "./tests/images/btech1.jpg"
         
         # Load the PIL image
         pil_image = Image.open(test_img)
@@ -113,7 +193,7 @@ if __name__ == "__main__":
         if result and result.get('bounding_box'):
             print(f"\nShirt Detection Confidence: {result['shirt_detection_confidence']}")
             print(f"Bounding Box: {result['bounding_box']}")
-            print(f"Dominant Color: {result['dominant_color']}")
+            # print(f"Dominant Color: {result['dominant_color']}")
             print(f"Color Confidence: {result['color_confidence']}")
             print(f"Overall Confidence: {result['overall_confidence']}")
             print(f"Detected Department: {result['department']}")
@@ -135,6 +215,17 @@ if __name__ == "__main__":
             color = (0, 255, 0)  # Green color in BGR
             thickness = 2
             img_cv = cv2.rectangle(img_cv, start_point, end_point, color, thickness)
+            
+            # Add department text above the bounding box
+            department_text = result['department']
+            font = cv2.FONT_HERSHEY_SIMPLEX
+            font_scale = 1.5  # Larger scale for big text
+            text_color = (0, 0, 255)  # Black color in BGR
+            text_thickness = 3  # Increased thickness for bold text
+            
+            # Calculate text position (slightly above the top-left corner of the bounding box)
+            text_position = (int(x1), int(y1) - 10)  # Move 10 pixels above y1
+            img_cv = cv2.putText(img_cv, department_text, text_position, font, font_scale, text_color, text_thickness, cv2.LINE_AA)
 
             # Display the image with bounding box
             cv2.imshow("Image with Bounding Box", img_cv)
