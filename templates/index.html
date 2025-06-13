@@ -316,12 +316,15 @@
                     `;
                 } else {
                     let reason = '';
-                    if (name === "Unknown") {
-                        reason = 'Face not recognized in database';
-                    } else if (uniformDept === "Unknown") {
-                        reason = 'Could not Identify Department from Shirt';
+
+                    if (faceDept === "Unknown" && uniformDept === "Unknown") {
+                        reason = `<b>Outsider</b> detected`;
+                    } else if (faceDept === "Unknown" && uniformDept !== "Unknown") {
+                        reason = `Potential <b>Security Threat</b> detected`;
+                    }else if (faceDept !== "Unknown" && uniformDept === "Unknown") {
+                        reason = `<b>${name}</b> is not in university uniform`;
                     } else if (faceDept !== uniformDept) {
-                        reason = `Department mismatch detected`;
+                        reason = `<b>${name}</b> appears to be wearing a uniform from a <b>different department</b>`;
                     }
                     
                     authorizationHtml = `
