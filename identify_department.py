@@ -30,10 +30,16 @@ def identify_department_from_uniform_colorcode(image):
                 if cropped_shirt.size == 0:
                     continue
                 
-                # Convert to RGB for color extraction
-                # cropped_rgb = cv2.cvtColor(cropped_shirt, cv2.COLOR_BGR2RGB)
-                # dominant_color = get_dominant_color(cropped_rgb)
-                # department = detect_department_from_cropped_image(dominant_color, DEPARTMENT_COLORS)
+                crop_area = (x2 - x1) * (y2 - y1)
+                image_area = image.shape[0] * image.shape[1]
+                
+                # Area thresholds to filter out large/small false detections
+                min_shirt_area = 0.01 * image_area  # 1%
+                max_shirt_area = 0.3 * image_area   # 50%
+                
+                if crop_area < min_shirt_area or crop_area > max_shirt_area:
+                    continue  # Skip invalid shirt sizes
+                
                 department = get_department(cropped_shirt, DEPARTMENT_COLORS)
                 
                 overall_confidence = confidence * (0.8 if department else 0.3)
@@ -60,30 +66,6 @@ def identify_department_from_uniform_colorcode(image):
         print(f"Error in identify_department_from_uniform_colorcode: {e}")
         return None
 
-
-# def detect_department_from_cropped_image(dominant_color, department_colors):
-#     """
-#     Detect department based on the dominant HSV color.
-
-#     Parameters:
-#     - dominant_color: Tuple of HSV values (H, S, V).
-#     - department_colors: Dict of departments with HSV 'lower' and 'upper' bounds.
-
-#     Returns:
-#     - str: Department name if matched, else "No Match".
-#     """
-#     h, s, v = dominant_color
-
-#     for dept, ranges in department_colors.items():
-#         lower = ranges['lower']
-#         upper = ranges['upper']
-
-#         if (lower[0] <= h <= upper[0] and
-#             lower[1] <= s <= upper[1] and
-#             lower[2] <= v <= upper[2]):
-#             return dept
-
-#     return None
 
 
 def find_max_contour(image, hsv_lower, hsv_upper, area_threshold=0.4):
@@ -179,7 +161,7 @@ from PIL import Image
 
 if __name__ == "__main__":
     try:
-        test_img = "./tests/images/btech1.jpg"
+        test_img = "./tests/images/background.jpg"
         
         # Load the PIL image
         pil_image = Image.open(test_img)
