@@ -1,9 +1,6 @@
 from ultralytics import YOLO
-from utils.dominant_color import get_dominant_color
 import numpy as np
 import cv2
-from PIL import Image
-
 
 # custom trained YOLO model for shirt detection
 model = YOLO("runs/content/runs/detect/train/weights/best.pt")
@@ -174,8 +171,11 @@ DEPARTMENT_COLORS = {
     "B.TECH": {'lower': [0, 0, 0], 'upper': [40, 255, 168]},
     "B.PHARMA": {'lower': [105, 48, 0], 'upper': [179, 255, 255]},
     "BCA": {'lower': [87, 19, 156], 'upper': [179, 255, 255]},
-    # "B.PHARMA": {'lower': [100, 0, 149], 'upper': [116, 84, 255]}, # found from get_hsv.py
 }
+
+
+# Example usage:
+from PIL import Image
 
 if __name__ == "__main__":
     try:

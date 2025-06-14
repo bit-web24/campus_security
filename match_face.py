@@ -3,7 +3,7 @@ import base64
 import re
 import uuid
 import os
-from utils.face_utils import detect_and_match_faces
+from face_utils import detect_and_match_faces
 
 def match_face_with_db(image_data: str):
     # Extract base64 part from data URL

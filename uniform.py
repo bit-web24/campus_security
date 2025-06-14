@@ -28,12 +28,15 @@ def detect_department_from_uniform(image_data: str) -> str:
 
         # Detect shirt & department
         results = identify_department_from_uniform_colorcode(image)
-        if not results["department"]:
-            print("Warning: No valid department detected, returning default")
+        if not results:
+            print("No shirt detected, returning default")
             return "Unknown", [0, 50, 0, 50]
+        elif not results["department"]:
+            print("Warning: No valid department detected, returning default")
+            return "Unknown", results["bounding_box"]
         
         return results["department"], results["bounding_box"]
     
     except Exception as e:
-        print(f"Error in detect_department_from_uniform: {e}")
+        print(f"Error in identify_department_from_uniform_colorcode: {e}")
         return "Unknown", [0, 50, 0, 50]
