@@ -161,7 +161,7 @@ from PIL import Image
 
 if __name__ == "__main__":
     try:
-        test_img = "./tests/images/background.jpg"
+        test_img = "tests/images/btech.jpeg"
         
         # Load the PIL image
         pil_image = Image.open(test_img)

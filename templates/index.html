@@ -1,11 +1,13 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Intelligent Surveillance and Identification for Secure Campus</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
+        rel="stylesheet">
     <script>
         tailwind.config = {
             theme: {
@@ -33,10 +35,12 @@
         }
     </script>
 </head>
+
 <body class="h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 font-inter">
     <div class="w-full h-full flex flex-col p-2">
         <!-- Top Panel: Title -->
-        <div class="bg-gradient-to-r from-blue-600 to-indigo-600 px-4 py-2 rounded-xl shadow text-white font-semibold text-center text-lg mb-2">
+        <div
+            class="bg-gradient-to-r from-blue-600 to-indigo-600 px-4 py-2 rounded-xl shadow text-white font-semibold text-center text-lg mb-2">
             Intelligent Surveillance and Identification for Secure Campus
         </div>
 
@@ -45,9 +49,11 @@
 
             <!-- Video Feed - Right Panel -->
             <div class="w-9/12 bg-white rounded-2xl shadow-xl border border-gray-200 flex flex-col">
-                <div class="p-4 flex-1 flex items-center justify-center relative bg-gray-900 rounded-2xl overflow-hidden">
+                <div
+                    class="p-4 flex-1 flex items-center justify-center relative bg-gray-900 rounded-2xl overflow-hidden">
                     <video id="video" class="w-full h-full object-cover rounded-xl" autoplay></video>
-                    <div class="absolute top-4 left-4 bg-red-500 text-white px-3 py-1 rounded-full text-sm font-medium flex items-center">
+                    <div
+                        class="absolute top-4 left-4 bg-red-500 text-white px-3 py-1 rounded-full text-sm font-medium flex items-center">
                         <div class="w-2 h-2 bg-white rounded-full mr-2 animate-pulse"></div>
                         WEBCAM
                     </div>
@@ -63,8 +69,11 @@
                     <div class="text-center text-gray-500 py-12">
                         <div class="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
                             <svg class="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z">
+                                </path>
                             </svg>
                         </div>
                         <p class="text-base text-gray-600">Start camera to begin detection</p>
@@ -75,14 +84,21 @@
 
         <!-- Control Buttons -->
         <div class="mt-2 flex justify-center items-center gap-4">
-            <button id="startButton" class="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white px-6 py-2 rounded-xl font-semibold">
+            <button id="startButton"
+                class="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white px-6 py-2 rounded-xl font-semibold">
                 Start Camera
             </button>
-            <button id="stopButton" class="bg-gradient-to-r from-red-500 to-pink-500 hover:from-red-600 hover:to-pink-600 text-white px-6 py-2 rounded-xl font-semibold">
+            <button id="stopButton"
+                class="bg-gradient-to-r from-red-500 to-pink-500 hover:from-red-600 hover:to-pink-600 text-white px-6 py-2 rounded-xl font-semibold">
                 Stop Camera
             </button>
-            <button id="registerButton" class="bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 text-white px-6 py-2 rounded-xl font-semibold">
+            <button id="registerButton"
+                class="bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 text-white px-6 py-2 rounded-xl font-semibold">
                 Register
+            </button>
+            <button id="viewLogsBtn"
+            class="bg-gradient-to-r from-purple-500 to-violet-500 hover:from-purple-600 hover:to-violet-600 text-white px-6 py-2 rounded-xl font-semibold">
+                View Detection History
             </button>
         </div>
     </div>
@@ -149,6 +165,10 @@
 
         registerButton.addEventListener('click', () => {
             window.location.href = '/register';
+        });
+
+        document.getElementById("viewLogsBtn").addEventListener("click", function () {
+            window.location.href = "/logs";
         });
 
         async function detect_and_display() {
@@ -284,6 +304,7 @@
                 `;
 
                 await new Promise(resolve => setTimeout(resolve, 800));
+                let REASON = '';
 
                 let authorizationHtml = '';
                 if (faceDept === uniformDept && name !== "Unknown" && faceDept !== "Unknown") {
@@ -296,7 +317,6 @@
                                     </svg>
                                 </div>
                                 <div class="flex-1">
-                                    <p class="font-bold text-lg mb-2">✓ AUTHORIZED</p>
                                     <div class="text-sm space-y-1">
                                         <div class="flex justify-between">
                                             <span class="text-green-700">Student:</span>
@@ -307,7 +327,7 @@
                                             <span class="font-semibold">${faceDept}</span>
                                         </div>
                                         <div class="mt-2 text-xs text-green-600 bg-green-100 px-2 py-1 rounded-md">
-                                            no security risk detected
+                                            No security risk detected
                                         </div>
                                     </div>
                                 </div>
@@ -315,18 +335,20 @@
                         </div>
                     `;
                 } else {
-                    let reason = '';
+                    let reason = 'Recored department and identified department match';
 
                     if (faceDept === "Unknown" && uniformDept === "Unknown") {
-                        reason = `<b>Outsider</b> detected`;
+                        reason = `Outsider detected`;
                     } else if (faceDept === "Unknown" && uniformDept !== "Unknown") {
-                        reason = `Potential <b>Security Threat</b> detected`;
-                    }else if (faceDept !== "Unknown" && uniformDept === "Unknown") {
-                        reason = `<b>${name}</b> is not in university uniform`;
+                        reason = `Unidentified student appears to be in uniform of department ${uniformDept}`;
+                    } else if (faceDept !== "Unknown" && uniformDept === "Unknown") {
+                        reason = `${name} is not in university uniform`;
                     } else if (faceDept !== uniformDept) {
-                        reason = `<b>${name}</b> appears to be wearing a uniform from a <b>different department</b>`;
+                        reason = `${name} appears to be wearing a uniform from a different department`;
                     }
-                    
+
+                    REASON = reason;
+
                     authorizationHtml = `
                         <div class="bg-red-50 border-2 border-red-300 text-red-800 p-5 rounded-xl shadow-lg">
                             <div class="flex items-start">
@@ -336,13 +358,9 @@
                                     </svg>
                                 </div>
                                 <div class="flex-1">
-                                    <p class="font-bold text-lg mb-2">✗ NOT AUTHORIZED</p>
                                     <div class="text-sm">
                                         <div class="text-red-700 bg-red-100 px-2 py-1 rounded-md">
                                             ${reason}
-                                        </div>
-                                        <div class="mt-2 text-xs text-red-600">
-                                            potential security risk detected
                                         </div>
                                     </div>
                                 </div>
@@ -395,7 +413,8 @@
                     </div>
                 `;
 
-                await new Promise(resolve => setTimeout(resolve, 4000));
+                await new Promise(resolve => setTimeout(resolve, 7000));
+                await storeLog(name, faceDept, uniformDept, REASON);
 
             } catch (error) {
                 console.error('Error:', error);
@@ -417,6 +436,40 @@
                 isProcessing = false;
             }
         }
+
+        async function storeLog(name, faceDept, uniformDept, reason) {
+            try {
+                if(reason === '') {
+                    reason = 'Recored department and identified department match';
+                };
+                
+                const response = await fetch('/store_log', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        name: name,
+                        face_dept: faceDept,
+                        uniform_dept: uniformDept,
+                        reason:  reason,
+                    })
+                });
+
+                if (!response.ok) {
+                    // Handle HTTP errors
+                    const errorText = await response.text();
+                    throw new Error(`Request failed with status ${response.status}: ${errorText}`);
+                }
+
+                const data = await response.json();
+                return data;
+
+            } catch (error) {
+                console.error('Error storing log:', error);
+                // Optionally re-throw or handle the error in your UI
+                throw error;
+            }
+        }
     </script>
 </body>
+
 </html>

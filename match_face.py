@@ -14,7 +14,7 @@ def match_face_with_db(image_data: str):
     image_bytes = base64.b64decode(image_b64)
     
     # Save to a temporary file
-    temp_filename = f"/tmp/{uuid.uuid4().hex}.jpg"
+    temp_filename = f"tmp/{uuid.uuid4().hex}.jpg"
     with open(temp_filename, "wb") as f:
         f.write(image_bytes)
     

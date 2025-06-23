@@ -1,9 +1,11 @@
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, Request, Query
 from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
 from match_face import match_face_with_db
 from uniform import detect_department_from_uniform
 from register_user import register_user_base64encoded
+from log import save_log_to_database
+import mysql.connector
 
 app = FastAPI()
 templates = Jinja2Templates(directory="templates")
@@ -60,6 +62,72 @@ async def register_user(request: Request):
     result = register_user_base64encoded(name, image_data, department)
     
     return result
+
+@app.post("/store_log")
+async def store_log(request: Request):
+    try:
+        data = await request.json()
+        name = data.get("name")
+        faceDept = data.get("face_dept")
+        uniformDept = data.get("uniform_dept")
+        status = data.get("reason")
+
+        # Save to database
+        save_log_to_database({
+            "name": name,
+            "faceDept": faceDept,
+            "uniformDept": uniformDept,
+            "status": status,
+        })
+
+        return {"message": "Log stored successfully"}
+
+    except Exception as e:
+        return {"error": f"Failed to store log: {str(e)}"}
+
+
+@app.get("/logs", response_class=HTMLResponse)
+async def view_logs(request: Request, date: str = Query(default="")):
+    conn = mysql.connector.connect(
+        host="localhost",
+        user="bittu",
+        password="bittu",
+        database="deepface_schema"
+    )
+    cursor = conn.cursor(dictionary=True)
+
+    # Fetch distinct dates for dropdown
+    cursor.execute("SELECT DISTINCT DATE(created_at) as log_date FROM logs_data ORDER BY log_date DESC")
+    rows = cursor.fetchall()
+    available_dates = [row["log_date"].strftime("%Y-%m-%d") for row in rows]
+
+    # Fetch filtered logs
+    if date:
+        cursor.execute("""
+            SELECT name, face_dept, uniform_dept, status AS reason, created_at AS timestamp
+            FROM logs_data
+            WHERE DATE(created_at) = %s
+            ORDER BY created_at DESC
+        """, (date,))
+    else:
+        cursor.execute("""
+            SELECT name, face_dept, uniform_dept, status AS reason, created_at AS timestamp
+            FROM logs_data
+            ORDER BY created_at DESC
+            LIMIT 100
+        """)
+
+    logs = cursor.fetchall()
+    cursor.close()
+    conn.close()
+
+    return templates.TemplateResponse("logs.html", {
+        "request": request,
+        "logs": logs,
+        "available_dates": available_dates,
+        "selected_date": date
+    })
+
 
 if __name__ == "__main__":
     import uvicorn
