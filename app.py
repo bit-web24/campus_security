@@ -6,9 +6,14 @@ from uniform import detect_department_from_uniform
 from register_user import register_user_base64encoded
 from log import save_log_to_database
 import mysql.connector
+from fastapi.staticfiles import StaticFiles
+import os
 
 app = FastAPI()
 templates = Jinja2Templates(directory="templates")
+
+# Mount the 'tmp/' folder as static
+app.mount("/tmp", StaticFiles(directory="tmp"), name="tmp")
 
 @app.get("/", response_class=HTMLResponse)
 async def read_root(request: Request):
@@ -34,6 +39,7 @@ async def match_face(request: Request):
     return {
         "name": result.get("name", "Unknown"),
         "department": result.get("department", "Unknown"),
+        "captured_uuid": result.get("captured_uuid"),
     }
 
 @app.post("/detect_department")
@@ -71,6 +77,7 @@ async def store_log(request: Request):
         faceDept = data.get("face_dept")
         uniformDept = data.get("uniform_dept")
         status = data.get("reason")
+        captured_uuid = data.get("captured_uuid")
 
         # Save to database
         save_log_to_database({
@@ -78,6 +85,7 @@ async def store_log(request: Request):
             "faceDept": faceDept,
             "uniformDept": uniformDept,
             "status": status,
+            "captured_uuid": captured_uuid,
         })
 
         return {"message": "Log stored successfully"}
@@ -104,14 +112,14 @@ async def view_logs(request: Request, date: str = Query(default="")):
     # Fetch filtered logs
     if date:
         cursor.execute("""
-            SELECT name, face_dept, uniform_dept, status AS reason, created_at AS timestamp
+            SELECT name, face_dept, uniform_dept, status AS reason, created_at AS timestamp, captured_uuid
             FROM logs_data
             WHERE DATE(created_at) = %s
             ORDER BY created_at DESC
         """, (date,))
     else:
         cursor.execute("""
-            SELECT name, face_dept, uniform_dept, status AS reason, created_at AS timestamp
+            SELECT name, face_dept, uniform_dept, status AS reason, created_at AS timestamp, captured_uuid
             FROM logs_data
             ORDER BY created_at DESC
             LIMIT 100

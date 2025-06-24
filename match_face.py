@@ -14,7 +14,8 @@ def match_face_with_db(image_data: str):
     image_bytes = base64.b64decode(image_b64)
     
     # Save to a temporary file
-    temp_filename = f"tmp/{uuid.uuid4().hex}.jpg"
+    captured_uuid = uuid.uuid4().hex
+    temp_filename = f"tmp/{captured_uuid}.jpg"
     with open(temp_filename, "wb") as f:
         f.write(image_bytes)
     
@@ -38,4 +39,5 @@ def match_face_with_db(image_data: str):
     return {
         "name": matched_name,
         "department": next((user['department'] for user in users if user['name'] == matched_name), "Unknown"),
+        "captured_uuid": captured_uuid,
     }

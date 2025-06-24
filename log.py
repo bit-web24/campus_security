@@ -21,14 +21,15 @@ def save_log_to_database(data):
 
         # Ensure the `logs` table exists or change the table name
         sql = """
-            INSERT INTO logs_data (name, face_dept, uniform_dept, status)
-            VALUES (%s, %s, %s, %s)
+            INSERT INTO logs_data (name, face_dept, uniform_dept, status, captured_uuid)
+            VALUES (%s, %s, %s, %s, %s)
         """
         values = (
             data["name"],
             data["faceDept"],
             data["uniformDept"],
-            data["status"]
+            data["status"],
+            data["captured_uuid"]
         )
 
         cursor.execute(sql, values)

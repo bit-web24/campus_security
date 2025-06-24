@@ -205,6 +205,7 @@
 
                 const name = faceRes.name || "Unknown";
                 const faceDept = faceRes.department || "Unknown";
+                const captured_uuid = faceRes.captured_uuid || "default";
 
                 resultDiv.innerHTML = `
                     <div class="space-y-4">
@@ -414,7 +415,7 @@
                 `;
 
                 await new Promise(resolve => setTimeout(resolve, 7000));
-                await storeLog(name, faceDept, uniformDept, REASON);
+                await storeLog(name, faceDept, uniformDept, REASON, captured_uuid);
 
             } catch (error) {
                 console.error('Error:', error);
@@ -437,7 +438,7 @@
             }
         }
 
-        async function storeLog(name, faceDept, uniformDept, reason) {
+        async function storeLog(name, faceDept, uniformDept, reason, captured_uuid) {
             try {
                 if(reason === '') {
                     reason = 'Recored department and identified department match';
@@ -451,6 +452,7 @@
                         face_dept: faceDept,
                         uniform_dept: uniformDept,
                         reason:  reason,
+                        captured_uuid: captured_uuid,
                     })
                 });
 

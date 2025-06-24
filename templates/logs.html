@@ -63,6 +63,7 @@
                         <th class="px-6 py-3">Uniform Dept</th>
                         <th class="px-6 py-3">Message</th>
                         <th class="px-6 py-3">Timestamp</th>
+                        <th class="px-6 py-3">Captured Image</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -74,6 +75,12 @@
                         <td class="px-6 py-3">{{ log.uniform_dept }}</td>
                         <td class="px-6 py-3 text-red-600">{{ log.reason }}</td>
                         <td class="px-6 py-3 text-gray-500">{{ log.timestamp }}</td>
+                        <td class="px-6 py-3">
+                            <button onclick="showImagePopup('{{ log.captured_uuid }}')"
+                                class="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded">
+                                View
+                            </button>
+                        </td>
                     </tr>
                     {% else %}
                     <tr>
@@ -85,6 +92,15 @@
             </table>
         </div>
     </div>
+
+    <!-- Image Popup -->
+    <div id="imagePopup" class="fixed inset-0 bg-black bg-opacity-60 hidden items-center justify-center z-50">
+        <div class="bg-white rounded-xl shadow-lg p-4 max-w-md relative">
+            <button onclick="closeImagePopup()" class="absolute top-2 right-2 text-gray-500 hover:text-black">✕</button>
+            <img id="popupImage" src="" alt="Captured Image" class="rounded max-h-[80vh] mx-auto" />
+        </div>
+    </div>
+
 
     <script>
         document.addEventListener("DOMContentLoaded", function () {
@@ -125,6 +141,21 @@
                 alert("Please select year, month, and day.");
                 return false;
             }
+        }
+
+        function showImagePopup(uuid) {
+            const popup = document.getElementById('imagePopup');
+            const img = document.getElementById('popupImage');
+            img.src = `../tmp/${uuid}_processed.jpg`;
+            popup.classList.remove('hidden');
+            popup.classList.add('flex');
+        }
+
+        function closeImagePopup() {
+            const popup = document.getElementById('imagePopup');
+            popup.classList.add('hidden');
+            popup.classList.remove('flex');
+            document.getElementById('popupImage').src = "";
         }
     </script>
 
