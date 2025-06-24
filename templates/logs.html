@@ -19,15 +19,37 @@
         </div>
 
         <!-- Filter Form -->
-        <form method="GET" class="flex items-center gap-4 mb-6 justify-center">
-            <label for="date" class="text-sm font-medium text-gray-700">Select Date:</label>
-            <select name="date" id="date" class="border rounded-md p-2">
-                <option value="">-- All Dates --</option>
+        <form method="GET" class="flex items-center gap-4 mb-6 justify-center" onsubmit="return combineDate()">
+            <label class="text-sm font-medium text-gray-700">Select Date:</label>
+
+            <!-- Date dropdown (used to populate year, month, day in JS) -->
+            <select id="all-dates" class="hidden">
                 {% for d in available_dates %}
-                <option value="{{ d }}" {% if d==selected_date %}selected{% endif %}>{{ d }}</option>
+                <option value="{{ d }}">{{ d }}</option>
                 {% endfor %}
             </select>
-            <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700">Filter</button>
+
+            <!-- Year dropdown -->
+            <select id="year" class="border rounded-md p-2">
+                <option value="">Year</option>
+            </select>
+
+            <!-- Month dropdown -->
+            <select id="month" class="border rounded-md p-2">
+                <option value="">Month</option>
+            </select>
+
+            <!-- Day dropdown -->
+            <select id="day" class="border rounded-md p-2">
+                <option value="">Day</option>
+            </select>
+
+            <!-- Hidden input to preserve original structure -->
+            <input type="hidden" name="date" id="date">
+
+            <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700">
+                Filter
+            </button>
         </form>
 
         <!-- Logs Table -->
@@ -63,6 +85,49 @@
             </table>
         </div>
     </div>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            const allDates = Array.from(document.querySelectorAll('#all-dates option')).map(opt => opt.value);
+            const years = new Set(), months = new Set(), days = new Set();
+
+            allDates.forEach(date => {
+                const [y, m, d] = date.split('-');
+                years.add(y);
+                months.add(m);
+                days.add(d);
+            });
+
+            function populate(selectId, values) {
+                const select = document.getElementById(selectId);
+                [...values].sort().forEach(v => {
+                    const option = document.createElement("option");
+                    option.value = v;
+                    option.textContent = v;
+                    select.appendChild(option);
+                });
+            }
+
+            populate("year", years);
+            populate("month", months);
+            populate("day", days);
+        });
+
+        function combineDate() {
+            const y = document.getElementById('year').value;
+            const m = document.getElementById('month').value;
+            const d = document.getElementById('day').value;
+
+            if (y && m && d) {
+                document.getElementById('date').value = `${y}-${m}-${d}`;
+                return true;
+            } else {
+                alert("Please select year, month, and day.");
+                return false;
+            }
+        }
+    </script>
+
 </body>
 
 </html>
