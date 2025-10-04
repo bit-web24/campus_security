@@ -1,13 +1,11 @@
 import mysql.connector
 from mysql.connector import Error
 
+
 def connect_db():
     try:
         conn = mysql.connector.connect(
-            host="localhost",
-            user="bittu",
-            password="bittu",
-            database="deepface_schema"
+            host="localhost", user="bittu", password="bittu", database="deepface_schema"
         )
         return conn
     except Error as e:
@@ -29,7 +27,7 @@ def save_log_to_database(data):
             data["faceDept"],
             data["uniformDept"],
             data["status"],
-            data["captured_uuid"]
+            data["captured_uuid"],
         )
 
         cursor.execute(sql, values)
