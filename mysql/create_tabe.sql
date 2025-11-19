@@ -6,10 +6,12 @@ CREATE TABLE registered_users (
 );
 
 CREATE TABLE logs_data (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    user_id INT,
-    event_type VARCHAR(255),
-    event_time DATETIME DEFAULT CURRENT_TIMESTAMP,
-    details TEXT
+    id INT NOT NULL AUTO_INCREMENT,
+    name VARCHAR(255) NULL,
+    face_dept VARCHAR(255) NULL,
+    uniform_dept VARCHAR(255) NULL,
+    status VARCHAR(100) NULL,
+    captured_uuid VARCHAR(255) NULL,
+    created_at TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (id)
 );
-
